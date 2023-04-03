@@ -8,11 +8,11 @@
   "license": "ISC",
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.14.0",
-    "@types/node": "^18.15.11",
-    "@vercel/edge": "^0.3.1",
     "@vercel/node": "^2.9.10",
     "lru-cache": "^8.0.4",
-    "midash": "^0.8.2",
-    "vercel": "^28.16.12"
+    "midash": "^0.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11"
   }
 }
