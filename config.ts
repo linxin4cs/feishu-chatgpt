@@ -1,7 +1,6 @@
 export default {
-  // TODO: 可置于数据库中
   app: {
-    'shanyue-gpt': {
+    'chat-bot': {
       appId: process.env.SHANYUE_GPT_APP_ID,
       appSecret: process.env.SHANYUE_GPT_APP_SECRET,
       prompt: ''
