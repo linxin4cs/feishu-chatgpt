@@ -1,20 +1,19 @@
-import * as lark from '@larksuiteoapi/node-sdk'
-import { VercelRequest, VercelResponse } from '@vercel/node'
+const lark = require("@larksuiteoapi/node-sdk");
 
-import config from '../../config'
-import { cache } from '../../lib/cache'
-import { reply } from '../../lib/reply'
+const CONFIG = require("../../config");
+const cache = require("../../lib/cache");
+const reply = require("../../lib/reply");
 
-function createLarkClient(appId: string, appSecret: string): lark.Client {
-  let client = cache[appId]
+function createLarkClient(appId, appSecret) {
+  let client = cache[appId];
   if (client) {
-    return client
+    return client;
   }
   client = new lark.Client({
     appId,
     appSecret,
-  })
-  return client
+  });
+  return client;
 }
 
 // {
@@ -61,59 +60,60 @@ function createLarkClient(appId: string, appSecret: string): lark.Client {
 // }
 
 // TODO: 由于 @larksuiteoapi/node-sdk 中包含 fs 模块，暂时使用 edge function，有时间拆 sdk 换成 serverless function
-export default async function webhook(
-  request: VercelRequest,
-  response: VercelResponse
-) {
-  const { id } = request.query
-  const body = request.body || {}
+async function webhook(request, response) {
+  const { appId } = request.params;
+  const body = request.body || {};
+  const app = CONFIG.app[appId];
 
-  const app = config.app[id as string]
+  console.log(request.body);
 
   if (!app) {
-    return response.status(404).send(`App ${id} Not Found`)
+    response.status = 404;
+    return JSON.stringify(`App ${appId} Not Found`);
   }
 
-  const client = createLarkClient(app.appId, app.appSecret)
+  const client = createLarkClient(app.appId, app.appSecret);
 
   if (body.challenge) {
-    return response.json({ challenge: body.challenge })
+    return JSON.stringify({ challenge: body.challenge });
   }
 
-  const eventId = body.header.event_id
+  const eventId = body.header.event_id;
   if (cache.get(eventId)) {
-    return response.json({
+    return JSON.stringify({
       retry: true,
-    })
+    });
   }
   cache.set(eventId, true, {
     // 如果飞书没有在规定时间内接收到消息，则会重试，为了防止重试，此时使用缓存来避免次情况
     // 但是它是内存缓存，应用重新部署时会失效
     ttl: 10 * 3600 * 1000,
-  })
+  });
 
-  if (body.header.event_type === 'im.message.receive_v1') {
-    const message = body.event.message
-    const text = JSON.parse(message.content).text.replace('@_user_1 ', '')
+  if (body.header.event_type === "im.message.receive_v1") {
+    const message = body.event.message;
+    const text = JSON.parse(message.content).text.replace("@_user_1 ", "");
     const answer = await reply([
       {
-        role: 'user',
-        content: `${app.prompt || ''} ${text}`,
+        role: "user",
+        content: `${app.prompt || ""} ${text}`,
       },
-    ])
+    ]);
     await client.im.message.create({
       params: {
-        receive_id_type: 'chat_id',
+        receive_id_type: "chat_id",
       },
       data: {
         receive_id: message.chat_id,
         content: JSON.stringify({ text: answer }),
-        msg_type: 'text',
+        msg_type: "text",
       },
-    })
+    });
   }
 
-  return response.json({
+  return JSON.stringify({
     done: true,
-  })
+  });
 }
+
+module.exports = webhook;

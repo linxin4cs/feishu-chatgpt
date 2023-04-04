@@ -1,4 +1,5 @@
-export default {
+const ENV = {
+  PORT: 3000,
   OPEN_API_KEY: "",
   CHAT_BOT: {
     APP_ID: "",
@@ -6,3 +7,5 @@ export default {
     PROMPT: "",
   },
 };
+
+module.exports = ENV;
